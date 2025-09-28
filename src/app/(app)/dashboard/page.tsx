@@ -92,12 +92,22 @@ interface DashboardStats {
   recentActivity: Array<{ date: string; occurrences: number }>;
 }
 
+interface MarineData {
+  temperature?: number;
+  salinity?: number;
+  currentSpeed?: number;
+  timestamp: string;
+  location: string;
+}
+
 export default function DashboardPage() {
   const [selectedFish, setSelectedFish] = useState<Fish | null>(fishSpecies[0]);
   const [isAssistantOpen, setAssistantOpen] = useState(false);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [mapPoints, setMapPoints] = useState<MapPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [marineData, setMarineData] = useState<MarineData[]>([]);
+  const [marineLoading, setMarineLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [habitatFilter, setHabitatFilter] = useState("all");
@@ -134,6 +144,24 @@ export default function DashboardPage() {
     };
 
     fetchDashboardData();
+  }, []);
+
+  // Fetch marine data
+  useEffect(() => {
+    const fetchMarineData = async () => {
+      try {
+        setMarineLoading(true);
+        const response = await fetch('/api/copernicus');
+        const data = await response.json();
+        setMarineData(data);
+      } catch (error) {
+        console.error('Error fetching marine data:', error);
+      } finally {
+        setMarineLoading(false);
+      }
+    };
+
+    fetchMarineData();
   }, []);
 
   const filteredFish = useMemo(() => {
@@ -258,6 +286,59 @@ export default function DashboardPage() {
           </Card>
         </div>
       )}
+
+      {/* Marine Data Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Waves className="h-5 w-5" />
+            Live Marine Conditions
+          </CardTitle>
+          <CardDescription>
+            Real-time ocean data from key locations
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {marineLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              <span>Loading marine data...</span>
+            </div>
+          ) : marineData.length > 0 ? (
+            <div className="space-y-4">
+              {marineData.map((data, index) => (
+                <div key={index} className="p-3 bg-muted/50 rounded-lg">
+                  <p className="font-semibold mb-2">{data.location}</p>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div className="flex items-center gap-1">
+                      <Thermometer className="h-4 w-4 text-blue-500" />
+                      <span>{data.temperature}°C</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Zap className="h-4 w-4 text-green-500" />
+                      <span>{data.salinity} PSU</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Activity className="h-4 w-4 text-orange-500" />
+                      <span>{data.currentSpeed} m/s</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
+              <p>Unable to load marine data</p>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter>
+          <p className="text-xs text-muted-foreground">
+            Last updated: {marineData.length > 0 ? new Date(marineData[0].timestamp).toLocaleString() : 'Never'}
+          </p>
+        </CardFooter>
+      </Card>
 
       {/* Main Dashboard Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
