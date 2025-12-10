@@ -219,6 +219,8 @@ FIREBASE_AUTH_DOMAIN=your_domain
 The application can be deployed to various platforms:
 
 ### Vercel (Recommended)
+[Live Demo](https://sih-web-git-main-njvishnun-6471s-projects.vercel.app?_vercel_share=AbPxBv6C93N91QGtw7LmaZbc6EVW3HS8)
+
 ```bash
 npm run build
 vercel deploy
