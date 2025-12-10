@@ -49,6 +49,7 @@ export type FishSpeciesCard = {
     population: number;
     stockTrend: 'increasing' | 'decreasing' | 'stable';
     imageId: string;
+    image_links?: string;
     occurrenceCount: number;
     locations: string[];
     depthRange: string;

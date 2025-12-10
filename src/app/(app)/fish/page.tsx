@@ -348,7 +348,7 @@ export default function FishInfoPage() {
                 <CardHeader>
                   <div className="relative aspect-video w-full rounded-md overflow-hidden">
                     <Image
-                      src={getImageUrl(fish.imageId)}
+                      src={fish.image_links || getImageUrl(fish.imageId)}
                       alt={fish.name}
                       fill
                       style={{ objectFit: "cover" }}

@@ -32,6 +32,7 @@ async function seedData() {
         habitat: row.habitat,
         individualCount: row.individualCount,
         identifiedBy: row.identifiedBy,
+        image_links: row.ImageLinks
       }));
 
       if (dataToInsert.length > 0) {

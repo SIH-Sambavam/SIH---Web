@@ -22,7 +22,7 @@ export async function GET() {
 
             // Habitat distribution
             collection.aggregate([
-                { $match: { habitat: { $exists: true, $ne: null, $ne: '' } } },
+                { $match: { habitat: { $nin: [null, ''] } } },
                 { $group: { _id: '$habitat', count: { $sum: 1 } } },
                 { $sort: { count: -1 } },
                 { $limit: 10 }
@@ -30,7 +30,7 @@ export async function GET() {
 
             // Location distribution
             collection.aggregate([
-                { $match: { locality: { $exists: true, $ne: null, $ne: '' } } },
+                { $match: { locality: { $nin: [null, ''] } } },
                 { $group: { _id: '$locality', count: { $sum: 1 } } },
                 { $sort: { count: -1 } },
                 { $limit: 20 }
@@ -39,18 +39,38 @@ export async function GET() {
             // Depth statistics
             collection.aggregate([
                 {
+                    $addFields: {
+                        convertedMinDepth: {
+                            $convert: {
+                                input: "$minimumDepthInMeters",
+                                to: "double",
+                                onError: null,
+                                onNull: null
+                            }
+                        },
+                        convertedMaxDepth: {
+                            $convert: {
+                                input: "$maximumDepthInMeters",
+                                to: "double",
+                                onError: null,
+                                onNull: null
+                            }
+                        }
+                    }
+                },
+                {
                     $match: {
-                        minimumDepthInMeters: { $exists: true, $ne: null, $ne: '' },
-                        maximumDepthInMeters: { $exists: true, $ne: null, $ne: '' }
+                        convertedMinDepth: { $ne: null },
+                        convertedMaxDepth: { $ne: null }
                     }
                 },
                 {
                     $group: {
                         _id: null,
-                        avgMinDepth: { $avg: { $toDouble: '$minimumDepthInMeters' } },
-                        avgMaxDepth: { $avg: { $toDouble: '$maximumDepthInMeters' } },
-                        minDepth: { $min: { $toDouble: '$minimumDepthInMeters' } },
-                        maxDepth: { $max: { $toDouble: '$maximumDepthInMeters' } }
+                        avgMinDepth: { $avg: '$convertedMinDepth' },
+                        avgMaxDepth: { $avg: '$convertedMaxDepth' },
+                        minDepth: { $min: '$convertedMinDepth' },
+                        maxDepth: { $max: '$convertedMaxDepth' }
                     }
                 }
             ]).toArray()
@@ -58,7 +78,7 @@ export async function GET() {
 
         // Get top species by occurrence count
         const topSpecies = await collection.aggregate([
-            { $match: { scientificName: { $exists: true, $ne: null, $ne: '' } } },
+            { $match: { scientificName: { $nin: [null, ''] } } },
             {
                 $group: {
                     _id: '$scientificName',
@@ -74,7 +94,7 @@ export async function GET() {
         const recentActivity = await collection.aggregate([
             {
                 $match: {
-                    eventDate: { $exists: true, $ne: null, $ne: '' }
+                    eventDate: { $nin: [null, ''] }
                 }
             },
             { $sort: { eventDate: -1 } },

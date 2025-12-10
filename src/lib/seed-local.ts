@@ -42,6 +42,7 @@ async function seedDataLocal() {
         identificationReferences: row.identificationReferences,
         scientificNameID: row.scientificNameID,
         scientificName: row.scientificName,
+        image_links: [], // Added new field
       }));
 
       // Save to JSON file

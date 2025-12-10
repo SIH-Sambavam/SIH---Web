@@ -31,12 +31,13 @@ export async function GET(request: NextRequest) {
           habitats: { $addToSet: '$habitat' },
           localities: { $addToSet: '$locality' },
           waterBodies: { $addToSet: '$waterBody' },
-          minDepth: { $min: { $toDouble: '$minimumDepthInMeters' } },
-          maxDepth: { $max: { $toDouble: '$maximumDepthInMeters' } },
+          minDepth: { $min: { $convert: { input: '$minimumDepthInMeters', to: 'double', onError: null, onNull: null } } },
+          maxDepth: { $max: { $convert: { input: '$maximumDepthInMeters', to: 'double', onError: null, onNull: null } } },
           lastEventDate: { $max: '$eventDate' },
-          avgLatitude: { $avg: { $toDouble: '$decimalLatitude' } },
-          avgLongitude: { $avg: { $toDouble: '$decimalLongitude' } },
-          identifiedBy: { $addToSet: '$identifiedBy' }
+          avgLatitude: { $avg: { $convert: { input: '$decimalLatitude', to: 'double', onError: null, onNull: null } } },
+          avgLongitude: { $avg: { $convert: { input: '$decimalLongitude', to: 'double', onError: null, onNull: null } } },
+          identifiedBy: { $addToSet: '$identifiedBy' },
+          image_links: { $first: '$image_links' }
         }
       },
       { $sort: { occurrenceCount: -1 } },
@@ -70,7 +71,8 @@ export async function GET(request: NextRequest) {
         occurrenceCount: spec.occurrenceCount,
         locations: spec.localities?.filter(Boolean).slice(0, 3) || [],
         depthRange,
-        lastSeen: spec.lastEventDate || 'Unknown'
+        lastSeen: spec.lastEventDate || 'Unknown',
+        image_links: spec.image_links
       };
     });
 
