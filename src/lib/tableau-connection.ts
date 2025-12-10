@@ -7,6 +7,13 @@ export interface TableauConfig {
   tokenName?: string;
 }
 
+export interface TableauWorkbook {
+  id: string;
+  name: string;
+  contentUrl: string;
+  [key: string]: unknown;
+}
+
 export class TableauConnection {
   private config: TableauConfig;
 
@@ -32,7 +39,7 @@ export class TableauConnection {
       }
 
       const serverInfo = await response.json();
-      
+
       return {
         success: true,
         message: `Connected to Tableau Server ${serverInfo.serverInfo.productVersion}`
@@ -45,7 +52,7 @@ export class TableauConnection {
     }
   }
 
-  async getWorkbooks(): Promise<any[]> {
+  async getWorkbooks(): Promise<TableauWorkbook[]> {
     try {
       // First authenticate
       const authResponse = await fetch('/api/tableau/auth', {
@@ -91,9 +98,9 @@ export function validateTableauConfig(): { valid: boolean; missing: string[] } {
   });
 
   // Check for at least one authentication method
-  const hasAuth = process.env.TABLEAU_PERSONAL_ACCESS_TOKEN || 
-                  process.env.TABLEAU_USERNAME || 
-                  process.env.TABLEAU_TRUSTED_USER;
+  const hasAuth = process.env.TABLEAU_PERSONAL_ACCESS_TOKEN ||
+    process.env.TABLEAU_USERNAME ||
+    process.env.TABLEAU_TRUSTED_USER;
 
   if (!hasAuth) {
     missing.push('Authentication method (TABLEAU_PERSONAL_ACCESS_TOKEN or TABLEAU_USERNAME or TABLEAU_TRUSTED_USER)');

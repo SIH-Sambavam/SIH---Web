@@ -13,41 +13,44 @@ async function seedDataLocal() {
     header: true,
     skipEmptyLines: true,
     complete: async (results) => {
-      const dataToInsert = results.data.map((row: any) => ({
-        id: row.id,
-        institutionCode: row.institutionCode,
-        collectionCode: row.collectionCode,
-        basisOfRecord: row.basisOfRecord,
-        occurrenceID: row.occurrenceID,
-        catalogNumber: row.catalogNumber,
-        individualCount: parseInt(row.individualCount) || 0,
-        sex: row.sex,
-        lifeStage: row.lifeStage,
-        occurrenceStatus: row.occurrenceStatus,
-        eventDate: row.eventDate,
-        eventTime: row.eventTime,
-        habitat: row.habitat,
-        samplingProtocol: row.samplingProtocol,
-        waterBody: row.waterBody,
-        country: row.country,
-        locality: row.locality,
-        minimumDepthInMeters: parseFloat(row.minimumDepthInMeters) || 0,
-        maximumDepthInMeters: parseFloat(row.maximumDepthInMeters) || 0,
-        decimalLatitude: parseFloat(row.decimalLatitude) || 0,
-        decimalLongitude: parseFloat(row.decimalLongitude) || 0,
-        identificationQualifier: row.identificationQualifier,
-        typeStatus: row.typeStatus,
-        identifiedBy: row.identifiedBy,
-        dateIdentified: row.dateIdentified,
-        identificationReferences: row.identificationReferences,
-        scientificNameID: row.scientificNameID,
-        scientificName: row.scientificName,
-        image_links: [], // Added new field
-      }));
+      const dataToInsert = results.data.map((row: unknown) => {
+        const r = row as Record<string, string>;
+        return {
+          id: r.id,
+          institutionCode: r.institutionCode,
+          collectionCode: r.collectionCode,
+          basisOfRecord: r.basisOfRecord,
+          occurrenceID: r.occurrenceID,
+          catalogNumber: r.catalogNumber,
+          individualCount: parseInt(r.individualCount) || 0,
+          sex: r.sex,
+          lifeStage: r.lifeStage,
+          occurrenceStatus: r.occurrenceStatus,
+          eventDate: r.eventDate,
+          eventTime: r.eventTime,
+          habitat: r.habitat,
+          samplingProtocol: r.samplingProtocol,
+          waterBody: r.waterBody,
+          country: r.country,
+          locality: r.locality,
+          minimumDepthInMeters: parseFloat(r.minimumDepthInMeters) || 0,
+          maximumDepthInMeters: parseFloat(r.maximumDepthInMeters) || 0,
+          decimalLatitude: parseFloat(r.decimalLatitude) || 0,
+          decimalLongitude: parseFloat(r.decimalLongitude) || 0,
+          identificationQualifier: r.identificationQualifier,
+          typeStatus: r.typeStatus,
+          identifiedBy: r.identifiedBy,
+          dateIdentified: r.dateIdentified,
+          identificationReferences: r.identificationReferences,
+          scientificNameID: r.scientificNameID,
+          scientificName: r.scientificName,
+          image_links: [], // Added new field
+        }
+      });
 
       // Save to JSON file
       const outputPath = path.resolve(process.cwd(), 'data', 'occurrences.json');
-      
+
       // Create data directory if it doesn't exist
       const dataDir = path.dirname(outputPath);
       if (!fs.existsSync(dataDir)) {
@@ -55,14 +58,14 @@ async function seedDataLocal() {
       }
 
       fs.writeFileSync(outputPath, JSON.stringify(dataToInsert, null, 2));
-      
+
       console.log(`✅ Successfully processed ${dataToInsert.length} records`);
       console.log(`📁 Data saved to: ${outputPath}`);
       console.log('🎉 Local seeding completed!');
-      
+
       process.exit(0);
     },
-    error: (error: any) => {
+    error: (error: unknown) => {
       console.error('❌ Error parsing CSV:', error);
       process.exit(1);
     }

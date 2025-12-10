@@ -21,19 +21,22 @@ async function seedData() {
     header: true,
     skipEmptyLines: true,
     complete: async (results) => {
-      const dataToInsert = results.data.map((row: any) => ({
-        waterBody: row.waterBody,
-        locality: row.locality,
-        minimumDepthInMeters: row.minimumDepthInMeters,
-        maximumDepthInMeters: row.maximumDepthInMeters,
-        decimalLatitude: row.decimalLatitude,
-        decimalLongitude: row.decimalLongitude,
-        scientificName: row.scientificName,
-        habitat: row.habitat,
-        individualCount: row.individualCount,
-        identifiedBy: row.identifiedBy,
-        image_links: row.ImageLinks
-      }));
+      const dataToInsert = results.data.map((row: unknown) => {
+        const r = row as Record<string, string>;
+        return {
+          waterBody: r.waterBody,
+          locality: r.locality,
+          minimumDepthInMeters: r.minimumDepthInMeters,
+          maximumDepthInMeters: r.maximumDepthInMeters,
+          decimalLatitude: r.decimalLatitude,
+          decimalLongitude: r.decimalLongitude,
+          scientificName: r.scientificName,
+          habitat: r.habitat,
+          individualCount: r.individualCount,
+          identifiedBy: r.identifiedBy,
+          image_links: r.ImageLinks
+        }
+      });
 
       if (dataToInsert.length > 0) {
         await occurrences.insertMany(dataToInsert);
@@ -43,7 +46,7 @@ async function seedData() {
       }
       process.exit(0);
     },
-    error: (error: any) => {
+    error: (error: unknown) => {
       console.error('Error parsing CSV:', error);
       process.exit(1);
     }
