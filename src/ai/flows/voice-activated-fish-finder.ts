@@ -7,8 +7,8 @@
  * - FindFishLocationOutput - The return type for the findFishLocation function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 
 const FindFishLocationInputSchema = z.object({
   query: z.string().describe('The voice query from the fisherman, e.g., \"Where can I find Tuna?\"'),
@@ -22,7 +22,7 @@ export type FindFishLocationOutput = z.infer<typeof FindFishLocationOutputSchema
 
 export async function findFishLocation(input: FindFishLocationInput): Promise<FindFishLocationOutput> {
   const result = await findFishLocationFlow.run(input.query);
-  return result;
+  return result.result;
 }
 
 const findFishLocationFlow = ai.defineFlow(
@@ -52,19 +52,18 @@ const findFishLocationFlow = ai.defineFlow(
 );
 
 export const findFishLocationFlowWithConversation = ai.defineFlow({
-    name: 'findFishLocationFlowWithConversation',
-    inputSchema: z.string(),
-    outputSchema: z.string(),
-}, async (query, streamingCallback, context) => {
-    const history = context?.history;
+  name: 'findFishLocationFlowWithConversation',
+  inputSchema: z.string(),
+  outputSchema: z.string(),
+}, async (query: string) => {
+  // const history = context?.history;
 
-    const llmResponse = await ai.generate({
-        prompt: query,
-        history: history,
-        output: {
-            format: 'text'
-        }
-    });
+  const llmResponse = await ai.generate({
+    prompt: query,
+    output: {
+      format: 'text' as const
+    }
+  });
 
-    return llmResponse.output!;
+  return llmResponse.output!;
 });

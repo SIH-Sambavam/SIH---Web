@@ -4,41 +4,41 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const { username } = await request.json();
-    
+
     console.log('Tableau auth request received');
     console.log('Environment check:');
     console.log('- TABLEAU_SERVER_URL:', process.env.TABLEAU_SERVER_URL);
     console.log('- TABLEAU_USERNAME:', process.env.TABLEAU_USERNAME ? 'Set' : 'Not set');
     console.log('- TABLEAU_PASSWORD:', process.env.TABLEAU_PASSWORD ? 'Set' : 'Not set');
     console.log('- TABLEAU_SITE_ID:', process.env.TABLEAU_SITE_ID || 'Empty (default site)');
-    
+
     // Check if we have Personal Access Token (recommended for Tableau Online)
     if (process.env.TABLEAU_PERSONAL_ACCESS_TOKEN) {
       console.log('Using Personal Access Token authentication');
       const authToken = await authenticateWithPAT();
-      return NextResponse.json({ 
+      return NextResponse.json({
         token: authToken,
         serverUrl: process.env.TABLEAU_SERVER_URL,
         authType: 'pat'
       });
     }
-    
+
     // Use username/password authentication for Tableau Online
     if (process.env.TABLEAU_USERNAME && process.env.TABLEAU_PASSWORD) {
       console.log('Using username/password authentication');
       const authToken = await authenticateWithCredentials();
-      return NextResponse.json({ 
+      return NextResponse.json({
         token: authToken,
         serverUrl: process.env.TABLEAU_SERVER_URL,
         authType: 'credentials'
       });
     }
-    
+
     // Fallback to trusted ticket for Tableau Server
     console.log('Falling back to trusted ticket authentication');
     const trustedTicket = await generateTableauTrustedTicket(username);
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       ticket: trustedTicket,
       serverUrl: process.env.TABLEAU_SERVER_URL,
       authType: 'trusted'
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Tableau auth error:', error);
     return NextResponse.json(
-      { error: `Authentication failed: ${error.message}` }, 
+      { error: `Authentication failed: ${error instanceof Error ? error.message : String(error)}` },
       { status: 500 }
     );
   }
@@ -75,17 +75,17 @@ async function authenticateWithCredentials() {
     },
     body: JSON.stringify(authPayload),
   });
-  
+
   if (!response.ok) {
     const errorText = await response.text();
     console.error('Authentication failed:', response.status, errorText);
     throw new Error(`Authentication failed: ${response.status} ${errorText}`);
   }
-  
+
   // Check if response is JSON or XML
   const contentType = response.headers.get('content-type');
   const responseText = await response.text();
-  
+
   if (contentType && contentType.includes('application/json')) {
     const data = JSON.parse(responseText);
     return data.credentials.token;
@@ -119,7 +119,7 @@ async function authenticateWithPAT() {
       }
     }),
   });
-  
+
   const data = await response.json();
   return data.credentials.token;
 }
@@ -135,13 +135,13 @@ async function generateTableauTrustedTicket(username: string) {
       target_site: process.env.TABLEAU_SITE_ID || '',
     }),
   });
-  
+
   const ticket = await response.text();
-  
+
   // Check if ticket generation failed
   if (ticket === '-1') {
     throw new Error('Trusted ticket generation failed');
   }
-  
+
   return ticket;
 }

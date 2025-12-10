@@ -103,13 +103,13 @@ export default function MapboxMap({
     // Wait for style to be fully loaded before adding sources
     const addSourcesWhenReady = () => {
       if (!map.current) return;
-      
+
       if (!map.current.isStyleLoaded()) {
         // Wait for style to load
         setTimeout(addSourcesWhenReady, 100);
         return;
       }
-      
+
       addMapSources();
     };
 
@@ -136,27 +136,27 @@ export default function MapboxMap({
         console.warn('Error removing existing map layers/sources:', error);
       }
 
-    // Create GeoJSON data
-    const geojsonData = {
-      type: 'FeatureCollection' as const,
-      features: points.map(point => ({
-        type: 'Feature' as const,
-        properties: {
-          id: point.id,
-          title: point.title,
-          description: point.description || '',
-          scientificName: point.scientificName || '',
-          occurrenceCount: point.occurrenceCount || 1,
-          habitat: point.habitat || '',
-          depth: point.depth || '',
-          date: point.date || ''
-        },
-        geometry: {
-          type: 'Point' as const,
-          coordinates: [point.longitude, point.latitude]
-        }
-      }))
-    };
+      // Create GeoJSON data
+      const geojsonData = {
+        type: 'FeatureCollection' as const,
+        features: points.map(point => ({
+          type: 'Feature' as const,
+          properties: {
+            id: point.id,
+            title: point.title,
+            description: point.description || '',
+            scientificName: point.scientificName || '',
+            occurrenceCount: point.occurrenceCount || 1,
+            habitat: point.habitat || '',
+            depth: point.depth || '',
+            date: point.date || ''
+          },
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [point.longitude, point.latitude]
+          }
+        }))
+      };
 
       try {
         // Add source
@@ -216,25 +216,25 @@ export default function MapboxMap({
             }
           });
 
-      // Click event for clusters
-      map.current.on('click', 'clusters', (e) => {
-        const features = map.current!.queryRenderedFeatures(e.point, {
-          layers: ['clusters']
-        });
-
-        const clusterId = features[0].properties!.cluster_id;
-        (map.current!.getSource('points') as mapboxgl.GeoJSONSource).getClusterExpansionZoom(
-          clusterId,
-          (err, zoom) => {
-            if (err) return;
-
-            map.current!.easeTo({
-              center: (features[0].geometry as any).coordinates,
-              zoom: zoom
+          // Click event for clusters
+          map.current.on('click', 'clusters', (e) => {
+            const features = map.current!.queryRenderedFeatures(e.point, {
+              layers: ['clusters']
             });
-          }
-        );
-      });
+
+            const clusterId = features[0].properties!.cluster_id;
+            (map.current!.getSource('points') as mapboxgl.GeoJSONSource).getClusterExpansionZoom(
+              clusterId,
+              (err, zoom) => {
+                if (err) return;
+
+                map.current!.easeTo({
+                  center: (features[0].geometry as any).coordinates,
+                  zoom: zoom ?? 14
+                });
+              }
+            );
+          });
 
           // Change cursor on hover
           map.current.on('mouseenter', 'clusters', () => {
@@ -250,7 +250,7 @@ export default function MapboxMap({
           id: 'points',
           type: 'circle',
           source: 'points',
-          filter: clustered ? ['!', ['has', 'point_count']] : null,
+          filter: clustered ? ['!', ['has', 'point_count']] : undefined,
           paint: {
             'circle-color': '#11b4da',
             'circle-radius': 8,
@@ -259,21 +259,21 @@ export default function MapboxMap({
           }
         });
 
-    // Click event for individual points
-    map.current.on('click', 'points', (e) => {
-      const feature = e.features![0];
-      const coordinates = (feature.geometry as any).coordinates.slice();
-      const properties = feature.properties!;
+        // Click event for individual points
+        map.current.on('click', 'points', (e) => {
+          const feature = e.features![0];
+          const coordinates = (feature.geometry as any).coordinates.slice();
+          const properties = feature.properties!;
 
-      // Ensure that if the map is zoomed out such that multiple
-      // copies of the feature are visible, the popup appears
-      // over the copy being pointed to.
-      while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-      }
+          // Ensure that if the map is zoomed out such that multiple
+          // copies of the feature are visible, the popup appears
+          // over the copy being pointed to.
+          while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+          }
 
-      // Create popup content
-      const popupContent = `
+          // Create popup content
+          const popupContent = `
         <div class="p-3">
           <h3 class="font-bold text-lg mb-2">${properties.title}</h3>
           ${properties.scientificName ? `<p class="text-sm italic mb-1">${properties.scientificName}</p>` : ''}
@@ -285,25 +285,25 @@ export default function MapboxMap({
         </div>
       `;
 
-      new mapboxgl.Popup()
-        .setLngLat(coordinates)
-        .setHTML(popupContent)
-        .addTo(map.current!);
+          new mapboxgl.Popup()
+            .setLngLat(coordinates)
+            .setHTML(popupContent)
+            .addTo(map.current!);
 
-      // Call callback if provided
-      if (onPointClick) {
-        const point = points.find(p => p.id === properties.id);
-        if (point) onPointClick(point);
-      }
-    });
+          // Call callback if provided
+          if (onPointClick) {
+            const point = points.find(p => p.id === properties.id);
+            if (point) onPointClick(point);
+          }
+        });
 
-    // Change cursor on hover
-    map.current.on('mouseenter', 'points', () => {
-      map.current!.getCanvas().style.cursor = 'pointer';
-    });
-    map.current.on('mouseleave', 'points', () => {
-      map.current!.getCanvas().style.cursor = '';
-    });
+        // Change cursor on hover
+        map.current.on('mouseenter', 'points', () => {
+          map.current!.getCanvas().style.cursor = 'pointer';
+        });
+        map.current.on('mouseleave', 'points', () => {
+          map.current!.getCanvas().style.cursor = '';
+        });
 
         // Fit map to points if there are any
         if (points.length > 0) {
@@ -311,7 +311,7 @@ export default function MapboxMap({
           points.forEach(point => {
             bounds.extend([point.longitude, point.latitude]);
           });
-          
+
           map.current.fitBounds(bounds, {
             padding: 50,
             maxZoom: 12
@@ -327,7 +327,7 @@ export default function MapboxMap({
 
   if (!process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN) {
     return (
-      <div 
+      <div
         className="flex items-center justify-center bg-gray-100 rounded-lg border-2 border-dashed border-gray-300"
         style={{ height }}
       >
@@ -343,7 +343,7 @@ export default function MapboxMap({
 
   if (mapError) {
     return (
-      <div 
+      <div
         className="flex items-center justify-center bg-red-50 rounded-lg border-2 border-dashed border-red-300"
         style={{ height }}
       >
@@ -356,8 +356,8 @@ export default function MapboxMap({
   }
 
   return (
-    <div 
-      ref={mapContainer} 
+    <div
+      ref={mapContainer}
       className="w-full rounded-lg overflow-hidden border"
       style={{ height }}
     />

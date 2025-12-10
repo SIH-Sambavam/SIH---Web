@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
     if (locality) query.locality = new RegExp(locality, 'i');
 
     // Add coordinate filters to ensure we only get records with valid coordinates
-    query.decimalLatitude = { $exists: true, $ne: null, $ne: '', $type: 'string' };
-    query.decimalLongitude = { $exists: true, $ne: null, $ne: '', $type: 'string' };
+    query.decimalLatitude = { $exists: true, $nin: [null, ''], $type: 'string' };
+    query.decimalLongitude = { $exists: true, $nin: [null, ''], $type: 'string' };
 
     const coordinates = await collection
       .find(query)
@@ -32,12 +32,12 @@ export async function GET(request: NextRequest) {
       .map(record => {
         const lat = parseFloat(record.decimalLatitude);
         const lng = parseFloat(record.decimalLongitude);
-        
+
         // Validate coordinates
         if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
           return null;
         }
-        
+
         // Basic coordinate validation (rough world bounds)
         if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
           return null;
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
           description: `${record.scientificName || 'Unknown Species'} observed here`,
           scientificName: record.scientificName,
           habitat: record.habitat,
-          depth: record.minimumDepthInMeters && record.maximumDepthInMeters 
+          depth: record.minimumDepthInMeters && record.maximumDepthInMeters
             ? `${record.minimumDepthInMeters}m - ${record.maximumDepthInMeters}m`
             : undefined,
           date: record.eventDate,
@@ -64,12 +64,12 @@ export async function GET(request: NextRequest) {
     // Group by location to reduce clutter
     const groupedCoordinates = validCoordinates.reduce((acc, coord) => {
       const key = `${coord.latitude.toFixed(4)},${coord.longitude.toFixed(4)}`;
-      
+
       if (acc[key]) {
         acc[key].occurrenceCount += 1;
         acc[key].individualCount += coord.individualCount;
         acc[key].description = `${acc[key].occurrenceCount} occurrences at this location`;
-        
+
         // Add species to title if different
         if (!acc[key].title.includes(coord.scientificName) && coord.scientificName) {
           acc[key].title += ` & others`;
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
       } else {
         acc[key] = { ...coord };
       }
-      
+
       return acc;
     }, {} as Record<string, any>);
 

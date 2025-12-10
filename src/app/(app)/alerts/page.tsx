@@ -16,7 +16,7 @@ type Alert = {
   type: string;
   content: string;
   time: string;
-  severity: "high" | "medium" | "low";
+  severity: string;
 };
 
 function AlertCard({ alert }: { alert: Alert }) {

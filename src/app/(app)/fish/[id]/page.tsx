@@ -9,15 +9,7 @@ import {
 } from "@/components/ui/card";
 import { getImageUrl } from "@/lib/data";
 import Image from "next/image";
-import {
-  LineChart,
-  Line,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-} from "recharts";
+
 import { Badge } from "@/components/ui/badge";
 import {
   Waves,
@@ -53,6 +45,7 @@ interface SpeciesDetail {
   localities: string[];
   waterBodies: string[];
   countries: string[];
+  images: string[];
   depthRange: {
     min: number;
     max: number;
@@ -112,7 +105,7 @@ export default function FishDetailPage({ params }: { params: Promise<{ id: strin
   const [loading, setLoading] = useState(true);
   const [mapLoading, setMapLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const mapImage = PlaceHolderImages.find((img) => img.id === "map");
   const scientificName = decodeURIComponent(resolvedParams.id);
 
@@ -121,7 +114,7 @@ export default function FishDetailPage({ params }: { params: Promise<{ id: strin
       try {
         setLoading(true);
         const response = await fetch(`/api/fish/${encodeURIComponent(scientificName)}`);
-        
+
         if (!response.ok) {
           if (response.status === 404) {
             setError('Species not found');
@@ -130,7 +123,7 @@ export default function FishDetailPage({ params }: { params: Promise<{ id: strin
           }
           return;
         }
-        
+
         const data: SpeciesDetail = await response.json();
         setSpecies(data);
       } catch (err) {
@@ -147,12 +140,12 @@ export default function FishDetailPage({ params }: { params: Promise<{ id: strin
   useEffect(() => {
     const fetchMapData = async () => {
       if (!species) return;
-      
+
       try {
         setMapLoading(true);
         const response = await fetch(`/api/fish/coordinates?scientificName=${encodeURIComponent(species.scientificName)}&limit=50`);
         const data = await response.json();
-        
+
         if (data.coordinates) {
           setMapPoints(data.coordinates);
         }
@@ -196,27 +189,6 @@ export default function FishDetailPage({ params }: { params: Promise<{ id: strin
     "fish_detail3",
   ].map((id) => PlaceHolderImages.find((img) => img.id === id));
 
-  // Create chart data from recent occurrences
-  const chartData = species.recentOccurrences
-    .filter(occ => occ.date)
-    .map(occ => ({
-      date: occ.date,
-      occurrences: 1,
-      individuals: occ.individualCount || 1
-    }))
-    .reduce((acc, curr) => {
-      const existing = acc.find(item => item.date === curr.date);
-      if (existing) {
-        existing.occurrences += curr.occurrences;
-        existing.individuals += curr.individuals;
-      } else {
-        acc.push(curr);
-      }
-      return acc;
-    }, [] as Array<{date: string, occurrences: number, individuals: number}>)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(-10); // Last 10 data points
-
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       {/* Header */}
@@ -246,106 +218,8 @@ export default function FishDetailPage({ params }: { params: Promise<{ id: strin
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Column */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Occurrence Timeline */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Occurrence Timeline</CardTitle>
-              <CardDescription>
-                Recent sightings and individual counts over time.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={chartData}
-                    margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
-                  >
-                    <XAxis
-                      dataKey="date"
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                    />
-                    <YAxis
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                      label={{ value: 'Count', angle: -90, position: 'insideLeft' }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: "hsl(var(--background))",
-                        border: "1px solid hsl(var(--border))",
-                      }}
-                    />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="occurrences"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      name="Occurrences"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="individuals"
-                      stroke="hsl(var(--secondary))"
-                      strokeWidth={2}
-                      name="Individuals"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent Occurrences */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Occurrences</CardTitle>
-              <CardDescription>
-                Latest recorded sightings of {species.scientificName}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {species.recentOccurrences.slice(0, 5).map((occurrence) => (
-                  <div key={occurrence.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{occurrence.locality}</span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {occurrence.date}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Waves className="h-3 w-3" />
-                          {occurrence.habitat}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <AlignVerticalSpaceAround className="h-3 w-3" />
-                          {occurrence.depth}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium">{occurrence.individualCount || 1} individuals</div>
-                      <div className="text-sm text-muted-foreground">
-                        ID: {occurrence.identifiedBy}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Sidebar */}
-        <div className="space-y-8">
           {/* Image Gallery */}
           <Card>
             <CardHeader>
@@ -354,73 +228,52 @@ export default function FishDetailPage({ params }: { params: Promise<{ id: strin
             <CardContent>
               <Carousel className="w-full">
                 <CarouselContent>
-                  <CarouselItem>
-                    <div className="relative aspect-video w-full rounded-lg overflow-hidden">
-                      <Image
-                        src={getImageUrl("fish1")}
-                        alt={species.name}
-                        fill
-                        style={{ objectFit: "cover" }}
-                        data-ai-hint={`${species.name} fish`}
-                      />
-                    </div>
-                  </CarouselItem>
-                  {additionalImages.map((img, index) => img && (
-                    <CarouselItem key={index}>
-                      <div className="relative aspect-video w-full rounded-lg overflow-hidden">
-                        <Image
-                          src={img.imageUrl}
-                          alt={img.description}
-                          fill
-                          style={{ objectFit: "cover" }}
-                          data-ai-hint={img.imageHint}
-                        />
-                      </div>
-                    </CarouselItem>
-                  ))}
+                  {species.images && species.images.length > 0 ? (
+                    species.images.map((imgUrl, index) => (
+                      <CarouselItem key={index}>
+                        <div className="relative aspect-video w-full rounded-lg overflow-hidden">
+                          <Image
+                            src={imgUrl}
+                            alt={`${species.name} image ${index + 1}`}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 66vw"
+                          />
+                        </div>
+                      </CarouselItem>
+                    ))
+                  ) : (
+                    <>
+                      <CarouselItem>
+                        <div className="relative aspect-video w-full rounded-lg overflow-hidden">
+                          <Image
+                            src={getImageUrl("fish1")}
+                            alt={species.name}
+                            fill
+                            className="object-cover"
+                            data-ai-hint={`${species.name} fish`}
+                          />
+                        </div>
+                      </CarouselItem>
+                      {additionalImages.map((img, index) => img && (
+                        <CarouselItem key={`placeholder-${index}`}>
+                          <div className="relative aspect-video w-full rounded-lg overflow-hidden">
+                            <Image
+                              src={img.imageUrl}
+                              alt={img.description}
+                              fill
+                              className="object-cover"
+                              data-ai-hint={img.imageHint}
+                            />
+                          </div>
+                        </CarouselItem>
+                      ))}
+                    </>
+                  )}
                 </CarouselContent>
                 <CarouselPrevious />
                 <CarouselNext />
               </Carousel>
-            </CardContent>
-          </Card>
-
-          {/* Species Overview */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Species Overview</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <DetailItem 
-                icon={<Fish />} 
-                label="Total Occurrences" 
-                value={species.occurrenceCount.toLocaleString()} 
-              />
-              <DetailItem 
-                icon={<Users />} 
-                label="Total Individuals" 
-                value={species.totalIndividuals.toLocaleString()} 
-              />
-              <DetailItem 
-                icon={<AlignVerticalSpaceAround />} 
-                label="Depth Range" 
-                value={`${species.depthRange.min}m - ${species.depthRange.max}m`} 
-              />
-              <DetailItem 
-                icon={<Calendar />} 
-                label="First Recorded" 
-                value={species.dateRange.first || 'Unknown'} 
-              />
-              <DetailItem 
-                icon={<Calendar />} 
-                label="Last Seen" 
-                value={species.dateRange.last || 'Unknown'} 
-              />
-              <DetailItem 
-                icon={<MapPin />} 
-                label="Locations" 
-                value={`${species.localities.length} unique locations`} 
-              />
             </CardContent>
           </Card>
 
@@ -463,6 +316,95 @@ export default function FishDetailPage({ params }: { params: Promise<{ id: strin
             </CardContent>
           </Card>
         </div>
+
+        {/* Right Sidebar */}
+        <div className="space-y-8">
+          {/* Species Overview */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Species Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <DetailItem
+                icon={<Fish />}
+                label="Total Occurrences"
+                value={species.occurrenceCount.toLocaleString()}
+              />
+              <DetailItem
+                icon={<Users />}
+                label="Total Individuals"
+                value={species.totalIndividuals.toLocaleString()}
+              />
+              <DetailItem
+                icon={<AlignVerticalSpaceAround />}
+                label="Depth Range"
+                value={`${species.depthRange.min}m - ${species.depthRange.max}m`}
+              />
+              <DetailItem
+                icon={<Calendar />}
+                label="First Recorded"
+                value={species.dateRange.first || 'Unknown'}
+              />
+              <DetailItem
+                icon={<Calendar />}
+                label="Last Seen"
+                value={species.dateRange.last || 'Unknown'}
+              />
+              <DetailItem
+                icon={<MapPin />}
+                label="Locations"
+                value={`${species.localities.length} unique locations`}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Recent Occurrences */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Occurrences</CardTitle>
+              <CardDescription>
+                Latest recorded sightings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {species.recentOccurrences.slice(0, 5).map((occurrence) => (
+                  <div key={occurrence.id} className="flex flex-col gap-2 p-3 border rounded-lg text-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-medium">
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        <span>{occurrence.locality}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{occurrence.date}</span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      {occurrence.habitat && (
+                        <div className="flex items-center gap-1">
+                          <Waves className="h-3 w-3" />
+                          {occurrence.habitat}
+                        </div>
+                      )}
+                      {occurrence.depth && (
+                        <div className="flex items-center gap-1">
+                          <AlignVerticalSpaceAround className="h-3 w-3" />
+                          {occurrence.depth}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t mt-1">
+                      <span className="font-medium">{occurrence.individualCount || 1} individuals</span>
+                      <span className="text-xs text-muted-foreground truncate max-w-[120px]" title={occurrence.identifiedBy}>
+                        ID: {occurrence.identifiedBy}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Distribution Map */}
@@ -483,7 +425,7 @@ export default function FishDetailPage({ params }: { params: Promise<{ id: strin
               <span>{mapPoints.length} locations plotted</span>
               <span>{species.coordinates.length} total recorded coordinates</span>
             </div>
-            
+
             <MapboxMap
               points={mapPoints}
               height="500px"
@@ -493,7 +435,7 @@ export default function FishDetailPage({ params }: { params: Promise<{ id: strin
                 console.log('Clicked point:', point);
               }}
             />
-            
+
             {mapPoints.length === 0 && !mapLoading && (
               <div className="text-center py-8 text-muted-foreground">
                 <MapPin className="w-8 h-8 mx-auto mb-2 opacity-50" />

@@ -3,12 +3,12 @@ import { connectToDatabase } from '@/lib/mongodb';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const db = await connectToDatabase();
     const collection = db.collection('occurrences');
-    const { id } = params;
+    const { id } = await params;
 
     // Get detailed information for a specific species
     const pipeline = [
@@ -39,13 +39,14 @@ export async function GET(
           samplingProtocols: { $addToSet: '$samplingProtocol' },
           lifeStages: { $addToSet: '$lifeStage' },
           sexes: { $addToSet: '$sex' },
-          individualCounts: { $push: { $toInt: '$individualCount' } }
+          individualCounts: { $push: { $toInt: '$individualCount' } },
+          image_links: { $addToSet: '$image_links' }
         }
       }
     ];
 
     const result = await collection.aggregate(pipeline).toArray();
-    
+
     if (result.length === 0) {
       return NextResponse.json(
         { error: 'Species not found' },
@@ -80,6 +81,7 @@ export async function GET(
       localities: species.localities?.filter(Boolean) || [],
       waterBodies: species.waterBodies?.filter(Boolean) || [],
       countries: species.countries?.filter(Boolean) || [],
+      images: species.image_links?.filter(Boolean) || [],
       depthRange: {
         min: species.minDepth || 0,
         max: species.maxDepth || 0,
@@ -89,7 +91,7 @@ export async function GET(
         first: species.firstEventDate,
         last: species.lastEventDate
       },
-      coordinates: species.coordinates?.filter((coord: any) => 
+      coordinates: species.coordinates?.filter((coord: any) =>
         !isNaN(coord.lat) && !isNaN(coord.lng) && coord.lat !== 0 && coord.lng !== 0
       ) || [],
       identifiedBy: species.identifiedBy?.filter(Boolean) || [],

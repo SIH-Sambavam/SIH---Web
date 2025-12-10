@@ -31,7 +31,7 @@ export function TableauDashboard({
 
   useEffect(() => {
     loadTableauViz();
-    
+
     return () => {
       if (viz) {
         viz.dispose();
@@ -57,15 +57,15 @@ export function TableauDashboard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: 'current_user' })
       });
-      
+
       if (!authResponse.ok) {
         throw new Error('Failed to authenticate with Tableau');
       }
 
       const { ticket, token, serverUrl, authType } = await authResponse.json();
-      
+
       // Configure Tableau options
-      const options = {
+      const options: any = {
         width,
         height,
         hideTabs: !showTabs,
@@ -90,7 +90,7 @@ export function TableauDashboard({
           options.token = token;
         }
       }
-      
+
       // Initialize Tableau visualization
       const tableauViz = new window.tableau.Viz(containerRef.current, vizUrl, options);
       setViz(tableauViz);
@@ -193,8 +193,8 @@ export function TableauDashboard({
               </div>
             </div>
           )}
-          <div 
-            ref={containerRef} 
+          <div
+            ref={containerRef}
             className="w-full border rounded-lg overflow-hidden"
             style={{ minHeight: height }}
           />

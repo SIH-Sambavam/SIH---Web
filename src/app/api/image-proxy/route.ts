@@ -1,11 +1,10 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-import fetch from 'node-fetch';
+import { NextRequest, NextResponse } from 'next/server';
 
-const imageProxy = async (req: NextApiRequest, res: NextApiResponse) => {
-  const { imageUrl } = req.query;
+export async function GET(request: NextRequest) {
+  const imageUrl = request.nextUrl.searchParams.get('imageUrl');
 
-  if (!imageUrl || typeof imageUrl !== 'string') {
-    return res.status(400).json({ error: 'imageUrl is required' });
+  if (!imageUrl) {
+    return NextResponse.json({ error: 'imageUrl is required' }, { status: 400 });
   }
 
   try {
@@ -16,20 +15,26 @@ const imageProxy = async (req: NextApiRequest, res: NextApiResponse) => {
     });
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: 'Failed to fetch image' });
+      return NextResponse.json({ error: 'Failed to fetch image' }, { status: response.status });
     }
 
     const contentType = response.headers.get('content-type');
+    const arrayBuffer = await response.arrayBuffer();
+
+    // Create headers object
+    const headers = new Headers();
     if (contentType) {
-      res.setHeader('Content-Type', contentType);
+      headers.set('Content-Type', contentType);
     }
+    // Add cache control
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
 
-    const buffer = await response.buffer();
-    res.status(200).send(buffer);
+    return new NextResponse(arrayBuffer, {
+      status: 200,
+      headers
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Image proxy error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-};
-
-export default imageProxy;
+}
